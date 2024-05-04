@@ -1,12 +1,5 @@
 import asyncio
 
-class SalaDeChat:
-    def __init__(self):
-        self.participantes = set()
-
-    def ingresar(self, participante):
-        self.participantes.add(participante)
-
 class Participante:
     def __init__(self, sala, writer, reader):
         self.sala = sala
@@ -23,44 +16,63 @@ class Participante:
 
     def borrar(self):
         self.sala.participantes.remove(self)
+        self.writer.close()
 
     def dar_bienvenida(self):
         self.writer.write("Bienvenido a chat TCP\n".encode())
 
-sala = SalaDeChat()
+class SalaChat:
+    def __init__(self, host='127.0.0.1', port=12345):
+        self.participantes = []
+        self.host = host
+        self.port = port
 
-async def handle_client(reader, writer):
-    addr = writer.get_extra_info('peername')
-    print(f"Conexión aceptada de {addr}")
+        asyncio.run(self.iniciar())
 
-    cliente = Participante(sala, writer, reader)
-    sala.ingresar(cliente)
+    def ingresar(self, participante):
+        self.participantes.append(participante)
 
-    cliente.dar_bienvenida()
+    def borrar(self, participante):
+        self.participantes.remove(participante)
 
-    while True:
-        data = await reader.read(100)
-        if data:
-            message = data.decode()
-            # enviar mensaje a todos los participantes
-            cliente.enviar_mensaje(message)
-            await writer.drain()
-        else:
-            print("Cerrando la conexión")
-            writer.close()
-            cliente.borrar()
-            break
+    def dar_bienvenida(self, participante):
+        participante.dar_bienvenida()
 
-async def main():
-    server = await asyncio.start_server(
-        handle_client,
-        '127.0.0.1',
-        12345)
+    async def esperar_mensajes(self, participante):
+        while True:
+            data = await participante.reader.read(100)
+            if data:
+                message = data.decode()
+                participante.enviar_mensaje(message)
+                await participante.writer.drain()
+            else:
+                print("Cerrando la conexión")
+                participante.borrar()
+                break
 
-    addr = server.sockets[0].getsockname()
-    print(f'Servidor escuchando en {addr}')
+    async def atender(self, cliente):
+        self.ingresar(cliente)
+        self.dar_bienvenida(cliente)
+        await self.esperar_mensajes(cliente)
 
-    async with server:
-        await server.serve_forever()
+    async def recibir_clientes(self, reader, writer):
+        addr = writer.get_extra_info('peername')
+        print(f"Conexión aceptada de {addr}")
 
-asyncio.run(main())
+        cliente = Participante(self, writer, reader)
+        await self.atender(cliente)
+
+    async def iniciar(self):
+        print(f'Iniciando sala de chat...')
+        server = await asyncio.start_server(
+            self.recibir_clientes,
+            self.host,
+            self.port)
+
+        addr = server.sockets[0].getsockname()
+        print(f'Servidor escuchando en {addr}')
+
+        async with server:
+            await server.serve_forever()
+
+SalaChat()
