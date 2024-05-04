@@ -45,15 +45,15 @@ class SalaChat:
                 message = data.decode()
                 participante.enviar_mensaje(message)
                 await participante.writer.drain()
-            else:
-                print("Cerrando la conexión")
-                participante.borrar()
-                break
 
     async def atender(self, cliente):
-        self.ingresar(cliente)
-        self.dar_bienvenida(cliente)
-        await self.esperar_mensajes(cliente)
+        try :
+            self.ingresar(cliente)
+            self.dar_bienvenida(cliente)
+            await self.esperar_mensajes(cliente)
+        except ConnectionResetError:
+            print(f"Conexión perdida con {cliente.writer.get_extra_info('peername')}")
+            self.borrar(cliente)
 
     async def recibir_clientes(self, reader, writer):
         addr = writer.get_extra_info('peername')
