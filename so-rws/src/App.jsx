@@ -1,6 +1,8 @@
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { useEffect, useState } from 'react';
-import ProgramLoader from './components/ProgramLoader';
+import './App.css';
+import ConnectionAndLoader from './components/ConnectionAndLoader';
+import Console from './components/Console';
 
 function App() {
 
@@ -11,7 +13,7 @@ function App() {
     lastMessage,
     readyState,
     getWebSocket
-  } = useWebSocket('ws://localhost:8765'); // Reemplaza esto con tu URL de WebSocket
+  } = useWebSocket('ws://localhost:8000'); // Reemplaza esto con tu URL de WebSocket
 
   // Run when the connection state (readyState) changes
   useEffect(() => {
@@ -30,16 +32,13 @@ function App() {
     }
   }, [lastMessage])
 
-  return <>
+  return <main>
     <h1>Bienvenido al SISTEMA OPERATIVO</h1>
-    <p>Estado de la conexión: {readyState}</p>
-    <p>Último mensaje: {lastMessage ? lastMessage.data : 'Ninguno'}</p>
-    <ProgramLoader sendJsonMessage={sendJsonMessage} />
-    <h2>Consola</h2>
-    {listaMensajes.map((mensaje, index) => (
-      <p key={index}>{mensaje}</p>
-    ))}
-  </>
+    <div className="container">
+      <ConnectionAndLoader sendJsonMessage={sendJsonMessage} lastMessage={lastMessage} readyState={readyState} />
+      <Console listaMensajes={listaMensajes} />
+    </div>
+  </main>
 }
 
 export default App

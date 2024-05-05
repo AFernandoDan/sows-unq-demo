@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import "./ProgramLoader.css";
 
 function ProgramLoader({ sendJsonMessage }) {
   const [path, setPath] = useState('');
@@ -17,21 +18,27 @@ function ProgramLoader({ sendJsonMessage }) {
   };
 
   return (
-    <div>
-        <h2>Cargar programa</h2>
-      <label>
-        Path:
-        <input type="text" value={path} onChange={e => setPath(e.target.value)} />
-      </label>
-      <label>
-        Prioridad:
-        <input type="number" min="0" max="5" value={priority} onChange={e => setPriority(Number(e.target.value))} />
-      </label>
+    <div className="program-loader">
+      <h2>Cargar programa</h2>
+      <div className="path-priority-inputs">
+        <label>
+          Path:
+          <input type="text" value={path} onChange={e => setPath(e.target.value)} />
+        </label>
+        <label>
+          Prioridad:
+          <input type="number" min="0" max="5" value={priority} onChange={e => setPriority(Number(e.target.value))} />
+        </label>
+      </div>
       <label>
         Instrucciones (separadas por comas):
-        <input type="text" value={instructions} onChange={e => setInstructions(e.target.value)} />
+        <textarea 
+            style={{ fontFamily: "monospace" }}
+            value={instructions} 
+            onChange={e => setInstructions(e.target.value)} 
+        />
       </label>
-      <button onClick={handleSubmit}>Enviar</button>
+      <button onClick={handleSubmit}>Run</button>
     </div>
   );
 }

@@ -5,17 +5,21 @@ import json
 
 apiIsOnline = False
 logSocketList = []
-logMessageQueue = asyncio.Queue()
+logMessageQueue = asyncio.Queue(maxsize=5)
 
-def crearTareaSendLog(): 
-    async def send_log_messages():
-        while True:
-            for logSocket in logSocketList:
-                    message = await logMessageQueue.get()
-                    await logSocket.send(message)
-
-    asyncio.create_task(send_log_messages())
-
+async def send_log_messages():
+    while True:
+        message = await logMessageQueue.get()
+        for logSocket in logSocketList:
+            try :
+                await logSocket.send(message)
+            except websockets.exceptions.ConnectionClosed:
+                print('La conexión con el cliente se ha cerrado')
+                # quitar de la lista de sockets de log
+                if logSocket in logSocketList:
+                    logSocketList.remove(logSocket)
+        logMessageQueue.task_done()
+            
 async def cargarPrograma(programa):
     path = programa["path"]
     priority = programa["priority"]
@@ -35,18 +39,16 @@ async def simularEjecucion(programa):
     await asyncio.sleep(1)  # Simular una operación de lectura/escritura
     logMessageQueue.put_nowait('Programa ejecutado con éxito')
 
-def mandarMensajeCadaSegundo():
+async def mandarMensajeCadaSegundo():
     print("Mandando mensaje cada segundo")
-    async def asyncFunc():
-        while True:
-            logMessageQueue.put_nowait("server vivo")
-            await asyncio.sleep(1)
-            print(logMessageQueue)
-    asyncio.create_task(asyncFunc())
+    while True:
+        logMessageQueue.put_nowait("server vivo")
+        await asyncio.sleep(0.1)
+        print(logMessageQueue)
 
 async def recibirProgramas(websocket):
+        logSocketList.append(websocket)
         async for message in websocket:
-            print("cabeceras websocket", websocket.request_headers)
             data = json.loads(message)
             run_data = data.get('run', {})
             instructions = run_data.get('instructions', [])
@@ -59,26 +61,15 @@ async def recibirProgramas(websocket):
             }
             await cargarPrograma(programa)
 
-async def esperarParaSiempre(websocket):
-    async for message in websocket:
-        pass
-
 async def handle_message(websocket, path):
-    global apiIsOnline
-    if not apiIsOnline:
-        mandarMensajeCadaSegundo()
-        crearTareaSendLog()
-        apiIsOnline = True
-    await websocket.send('Bienvenido al Sistema Operativo remoto, carga tus programas')
     try:
-        if websocket.request_headers["Method"] == "LOG":
-            logSocketList.append(websocket)
-            print("Se ha conectado un socket de log")
-
-        elif websocket.request_headers["Method"] == "POST":
-            await recibirProgramas(websocket)
-
-        await esperarParaSiempre(websocket)
+        global apiIsOnline
+        if not apiIsOnline:
+            # asyncio.create_task(mandarMensajeCadaSegundo())
+            asyncio.create_task(send_log_messages())
+            apiIsOnline = True
+        await websocket.send('Bienvenido al Sistema Operativo remoto, carga tus programas')
+        await recibirProgramas(websocket)
     except websockets.exceptions.ConnectionClosed:
         print('La conexión con el cliente se ha cerrado')
         # quitar de la lista de sockets de log
