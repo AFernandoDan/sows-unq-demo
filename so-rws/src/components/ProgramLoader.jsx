@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import "./ProgramLoader.css";
+import { Button, NumberInput, TextInput } from 'react95';
 
 function ProgramLoader({ sendJsonMessage }) {
   const [path, setPath] = useState('');
@@ -7,7 +7,6 @@ function ProgramLoader({ sendJsonMessage }) {
   const [instructions, setInstructions] = useState('');
 
   const handleSubmit = () => {
-    console.log('Enviando programa', path, priority, instructions.split(',').map(instruction => instruction.trim()));
     sendJsonMessage({
       run: {
         path,
@@ -18,27 +17,28 @@ function ProgramLoader({ sendJsonMessage }) {
   };
 
   return (
-    <div className="program-loader">
+    <div>
       <h2>Cargar programa</h2>
-      <div className="path-priority-inputs">
+      <div>
         <label>
           Path:
-          <input type="text" value={path} onChange={e => setPath(e.target.value)} />
+          <TextInput value={path} onChange={e => setPath(e.target.value)} placeholder="prg1" />
         </label>
         <label>
           Prioridad:
-          <input type="number" min="0" max="5" value={priority} onChange={e => setPriority(Number(e.target.value))} />
+          <NumberInput defaultValue={0} min={0} max={5} onChange={n => setPriority(n)} />
         </label>
       </div>
       <label>
         Instrucciones (separadas por comas):
-        <textarea 
-            style={{ fontFamily: "monospace" }}
-            value={instructions} 
-            onChange={e => setInstructions(e.target.value)} 
-        />
+        <TextInput
+          multiline 
+          rows={4} 
+          value={instructions} 
+          onChange={e => setInstructions(e.target.value)} 
+          placeholder='CPU, IO, EXIT' />
       </label>
-      <button onClick={handleSubmit}>Run</button>
+      <Button fullWidth onClick={handleSubmit}>Run</Button>
     </div>
   );
 }
