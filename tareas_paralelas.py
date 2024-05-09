@@ -2,6 +2,7 @@ import asyncio
 import websockets
 
 websockets_list = []
+message_queue = asyncio.Queue()
 
 def borrar_cerrados():
     for ws in websockets_list:
@@ -9,16 +10,24 @@ def borrar_cerrados():
             websockets_list.remove(ws)
 
 def enviar_mensaje(websocket, message):
-    asyncio.create_task(websocket.send(message))
+    try:
+        asyncio.create_task(websocket.send(message))
+    except websockets.exceptions.ConnectionClosed:
+        print('La conexión con el cliente se ha cerrado')
+        websockets_list.remove(websocket)
 
-async def repetir_mensaje_para_todos():
-    i = 1
+async def cargar_mensaje_a_la_cola():
     while True:
+        # carga mensajes a la message_list
+        message_queue.put_nowait("Mensaje de la cola")
+        await asyncio.sleep(0.5)
+
+async def enviar_mensajes_de_la_lista():
+    while True:
+        # toma la message_list y enviarla a todos los websockets
+        message = await message_queue.get()
         borrar_cerrados()
-        for ws in websockets_list:
-                enviar_mensaje(ws, f"Mensaje {i}")
-        i += 1
-        await asyncio.sleep(1)
+        print(f"Enviando mensaje: {message}")
 
 async def esperarMensajes(websocket):
     async for message in websocket:
@@ -39,6 +48,7 @@ async def handler(websocket, path):
 
 start_server = websockets.serve(handler, "localhost", 8000)
 
-asyncio.get_event_loop().create_task(repetir_mensaje_para_todos())
 asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().create_task(cargar_mensaje_a_la_cola())
+asyncio.get_event_loop().create_task(enviar_mensajes_de_la_lista())
 asyncio.get_event_loop().run_forever()
