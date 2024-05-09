@@ -8,6 +8,7 @@ function ProgramLoader({ sendJsonMessage }) {
 
   const handleSubmit = () => {
     sendJsonMessage({
+      event: 'run',
       run: {
         path,
         priority,

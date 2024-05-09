@@ -1,5 +1,5 @@
 import React from 'react';
-import { Frame, MenuList, MenuListItem, Monitor, Separator, styleReset } from 'react95';
+import { Button, Frame, MenuList, MenuListItem, Monitor, Separator, styleReset, WindowHeader } from 'react95';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 
 /* Pick a theme of your choice */
@@ -35,17 +35,24 @@ const GlobalStyles = createGlobalStyle`
 
 const App = () => {
     const [listaMensajes, setListaMensajes] = useState([])
+    const [power, setPower] = useState(false)
+
+    // connect to /post
+    const { 
+      sendJsonMessage: sendJsonMessagePost, 
+      lastMessage: lastMessagePost,
+      readyState: readyStatePost,
+      getWebSocket: getWebSocketPost } = useWebSocket('ws://localhost:8000/POST');
 
     const {
       sendJsonMessage,
       lastMessage,
       readyState,
       getWebSocket
-    } = useWebSocket('ws://localhost:8000'); // Reemplaza esto con tu URL de WebSocket
+    } = useWebSocket('ws://localhost:8000/LOG'); // Reemplaza esto con tu URL de WebSocket
   
     // Run when the connection state (readyState) changes
     useEffect(() => {
-      console.log("Connection state changed")
       if (readyState === ReadyState.OPEN) {
         // sendJsonMessage({
         //   run: {path: "prg1", priority: 1, instructions: ["CPU", "IO", "EXIT"]}
@@ -55,22 +62,27 @@ const App = () => {
   
     useEffect(() => {
       if (lastMessage) {
-        console.log("New message received: ", lastMessage.data)
-        setListaMensajes([...listaMensajes, lastMessage.data])
+        setListaMensajes(prev => [...prev, lastMessage.data])
       }
     }, [lastMessage])
+
+    const handleSwitch = () => {
+        if (readyStatePost === ReadyState.OPEN) {
+            sendJsonMessagePost({
+                event: 'switch',
+            })
+        }
+    }
 
     return (
         <div>
             <GlobalStyles />
             <ThemeProvider theme={original}>
-                    <h1>Bienvenido al SISTEMA OPERATIVO</h1>
-                    <Frame variant='outside' shadow style={{ padding: '0.5rem', lineHeight: '1.5', width: 600 }}>
-                        <ConnectionAndLoader sendJsonMessage={sendJsonMessage} lastMessage={lastMessage} readyState={readyState} />
-                    </Frame>
-                    <Frame variant='outside' shadow style={{ padding: '0.5rem', lineHeight: '1.5', width: 600 }}>
-                        <Console listaMensajes={listaMensajes} />
-                    </Frame>
+                    <Button onClick={handleSwitch}>ON/OFF</Button>
+                    <WindowHeader>Bienvenido al SISTEMA OPERATIVO.exe</WindowHeader>
+                    {/* <Monitor backgroundStyles={{ background: 'blue' }} /> */}
+                    <ConnectionAndLoader sendJsonMessage={sendJsonMessagePost} lastMessage={lastMessage} readyState={readyState} />
+                    <Console listaMensajes={listaMensajes} />
             </ThemeProvider>
         </div>
     );
