@@ -9,7 +9,7 @@ function ProgramLoader({ sendJsonMessage }) {
   const handleSubmit = () => {
     sendJsonMessage({
       event: 'run',
-      run: {
+      data: {
         path,
         priority,
         instructions: instructions.split(',').map(instruction => instruction.trim())

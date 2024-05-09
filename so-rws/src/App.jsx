@@ -49,7 +49,7 @@ const App = () => {
       lastMessage,
       readyState,
       getWebSocket
-    } = useWebSocket('ws://localhost:8000/LOG'); // Reemplaza esto con tu URL de WebSocket
+    } = useWebSocket('ws://localhost:8000/'); // Reemplaza esto con tu URL de WebSocket
   
     // Run when the connection state (readyState) changes
     useEffect(() => {
